@@ -22,9 +22,43 @@ jobs:
       - run: pip install -r app/requirements.txt pytest
       - run: pytest app/ -v --tb=short
 
+  infrastructure:
+    name: Terraform Apply
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.8.0"
+
+      - name: Terraform Init
+        working-directory: root
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: root
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: root
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: root
+        run: terraform apply -auto-approve tfplan
+
   build:
     name: Build & Push to ECR
-    needs: test
+    needs: infrastructure
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
@@ -37,7 +71,7 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region:            us-east-1
 
       - name: Login to ECR
         id: ecr_login
@@ -57,51 +91,17 @@ jobs:
           docker push $REGISTRY/$REPO:$IMAGE_TAG
           docker push $REGISTRY/$REPO:latest
 
-  infrastructure:
-    name: Terraform Apply
+  deploy:
+    name: Deploy to ECS
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.8.0"
-
-      - name: Terraform Init
-        working-directory: root
-        run: terraform init
-
-      - name: Terraform Validate
-        working-directory: root
-        run: terraform validate
-
-      - name: Terraform Plan
-        working-directory: root
-        run: terraform plan -var="image_tag=${{ needs.build.outputs.image_tag }}" -out=tfplan
-
-      - name: Terraform Apply
-        working-directory: root
-        run: terraform apply -auto-approve tfplan
-
-  deploy:
-    name: Deploy to ECS
-    needs: [build, infrastructure]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+          aws-region:            us-east-1
 
       - name: Force new deployment
         run: |
