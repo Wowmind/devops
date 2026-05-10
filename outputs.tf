@@ -3,11 +3,11 @@ output "ecr_repository_url" {
   value       = module.infrastructure.ecr_repository_url
 }
 
+//ecs
 output "ecs_cluster_name" {
   description = "ECS cluster name — used in CI/CD deploy step"
   value       = module.infrastructure.ecs_cluster_name
 }
-
 output "ecs_service_name" {
   description = "ECS service name — used in CI/CD deploy step"
   value       = module.infrastructure.ecs_service_name
