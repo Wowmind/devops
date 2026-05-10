@@ -18,11 +18,6 @@ output "cloudwatch_log_group" {
   value       = module.infrastructure.cloudwatch_log_group
 }
 
-output "cloudwatch_dashboard_url" {
-  description = "Direct link to the CloudWatch dashboard"
-  value       = module.infrastructure.cloudwatch_dashboard_url
-}
-
 output "vpc_id" {
   description = "ID of the provisioned VPC"
   value       = module.infrastructure.vpc_id
