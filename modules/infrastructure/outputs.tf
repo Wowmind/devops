@@ -18,11 +18,6 @@ output "cloudwatch_log_group" {
   value       = aws_cloudwatch_log_group.devops_test.name
 }
 
-output "cloudwatch_dashboard_url" {
-  description = "Direct link to the CloudWatch dashboard"
-  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.devops_test.dashboard_name}"
-}
-
 output "vpc_id" {
   description = "ID of the provisioned VPC"
   value       = aws_vpc.devops_test.id
